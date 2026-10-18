@@ -4,6 +4,8 @@
 #include <PubSubClient.h>
 #include <Wire.h>
 #include <Adafruit_BMP085.h>
+#include <OneWire.h>
+#include <DallasTemperature.h>
 #include "time.h"
 #include <WebServer.h>
 #include "esp_sntp.h"  //синхронизация системного времени микроконтроллеров ESP32 по протоколу SNTP (Simple Network Time Protocol) через интернет
@@ -35,10 +37,13 @@ const int PIN_RELAY = 26;         // сигнал на реле
 const bool RELAY_ACTIVE_LOW = false;
 
 //---------BMP180 -------------
-#include <Wire.h>
-#include <Adafruit_BMP085.h>
-
+// #include <Wire.h>
 Adafruit_BMP085 bmp;
+
+// DS18B20 на пине D4
+const int oneWireBus = 4;
+OneWire oneWire(oneWireBus);
+DallasTemperature dsSensors(&oneWire);
 
 // ------- Settings -------
 enum Mode : uint8_t {
@@ -605,6 +610,8 @@ void setup() {
     while (1) {}
   }
 
+  dsSensors.begin();
+
   analogReadResolution(12);
 
   // Вызов функции подключения WiFi. Начальное подключение по WiFi
@@ -720,9 +727,11 @@ void loop() {
     lastMQTT = now;
     // Считываем датчик влажности в каждом круге
     moist = readADC();
-
+    
     // Публикуем данные, только если успешно подключены к брокеру
     if (mqtt.connected()) {
+      dsSensors.requestTemperatures();
+      float tempDS = dsSensors.getTempCByIndex(0);
       float temp = bmp.readTemperature();
       float press = bmp.readPressure() / 133.3223;
       float level = (WiFi.RSSI());
@@ -735,6 +744,8 @@ void loop() {
       mqtt.publish("garden/threshold", String(threshold_pct).c_str(), false);
       //mqtt.publish("garden/RSSI", String(level, 1).c_str(), false);
       Serial.println("MQTT published");
+      Serial.print("Temp_Out = ");
+      Serial.println(tempDS);
     } else {
       Serial.println("Пропуск публикации: нет соединения с MQTT");
     }
