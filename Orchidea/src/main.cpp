@@ -746,6 +746,14 @@ void loop() {
       float h = dht.readHumidity();
       float t = dht.readTemperature();
 
+      // Конвектируем h и t в строки
+      
+      char humString[8];
+      dtostrf(h, 1, 2, humString);
+
+      char tempString[8];
+      dtostrf(t, 1, 2, tempString);
+
       if (isnan(h) || isnan(t)) {
     Serial.println("Ошибка считывания с датчика DHT!");
     return;
@@ -754,17 +762,12 @@ void loop() {
       mqtt.publish("garden/temperature", String(temp, 1).c_str(), false);
       mqtt.publish("garden/pressure", String(press, 1).c_str(), false);
       mqtt.publish("garden/tempOut", String(tempDS, 1).c_str(), false);
-      // mqtt.publish("garden/pump", pumpOn ? "ON" : "OFF", true);
-      // mqtt.publish("garden/mode", mode == MODE_AUTO ? "AUTO" : "MANUAL", true);
-      // mqtt.publish("garden/threshold", String(threshold_pct).c_str(), false);
+      mqtt.publish("garden/hDHT", humString, false);
+      mqtt.publish("garden/tDHT", tempString, false );
+      
       mqtt.publish("garden/RSSI", String(level, 1).c_str(), false);
      
       Serial.println("MQTT published");
-
-      Serial.print("DHT h = ");
-      Serial.println(h);
-      Serial.print("DHT t = ");
-      Serial.println(t);
 
     } else {
       Serial.println("Пропуск публикации: нет соединения с MQTT");
