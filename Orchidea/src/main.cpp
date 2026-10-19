@@ -737,12 +737,13 @@ void loop() {
       float level = (WiFi.RSSI());
 
       mqtt.publish("garden/moisture", String(moist).c_str(), false);
-      // mqtt.publish("garden/pump", pumpOn ? "ON" : "OFF", true);
       mqtt.publish("garden/temperature", String(temp, 1).c_str(), false);
       mqtt.publish("garden/pressure", String(press, 1).c_str(), false);
+      mqtt.publish("garden/tempOut", String(tempDS, 1).c_str(), false);
+      // mqtt.publish("garden/pump", pumpOn ? "ON" : "OFF", true);
       // mqtt.publish("garden/mode", mode == MODE_AUTO ? "AUTO" : "MANUAL", true);
-      mqtt.publish("garden/threshold", String(threshold_pct).c_str(), false);
-      //mqtt.publish("garden/RSSI", String(level, 1).c_str(), false);
+      // mqtt.publish("garden/threshold", String(threshold_pct).c_str(), false);
+      mqtt.publish("garden/RSSI", String(level, 1).c_str(), false);
       Serial.println("MQTT published");
       Serial.print("Temp_Out = ");
       Serial.println(tempDS);
