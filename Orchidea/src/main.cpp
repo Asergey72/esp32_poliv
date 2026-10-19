@@ -6,6 +6,7 @@
 #include <Adafruit_BMP085.h>
 #include <OneWire.h>
 #include <DallasTemperature.h>
+#include <DHT.h>
 #include "time.h"
 #include <WebServer.h>
 #include "esp_sntp.h"  //синхронизация системного времени микроконтроллеров ESP32 по протоколу SNTP (Simple Network Time Protocol) через интернет
@@ -44,6 +45,12 @@ Adafruit_BMP085 bmp;
 const int oneWireBus = 4;
 OneWire oneWire(oneWireBus);
 DallasTemperature dsSensors(&oneWire);
+
+// ----------- DHT -------------
+#define DHTPIN 5
+#define DHTTYPE DHT22
+
+DHT dht(DHTPIN, DHTTYPE);
 
 // ------- Settings -------
 enum Mode : uint8_t {
@@ -611,6 +618,7 @@ void setup() {
   }
 
   dsSensors.begin();
+  dht.begin();
 
   analogReadResolution(12);
 
@@ -735,7 +743,13 @@ void loop() {
       float temp = bmp.readTemperature();
       float press = bmp.readPressure() / 133.3223;
       float level = (WiFi.RSSI());
+      float h = dht.readHumidity();
+      float t = dht.readTemperature();
 
+      if (isnan(h) || isnan(t)) {
+    Serial.println("Ошибка считывания с датчика DHT!");
+    return;
+    }
       mqtt.publish("garden/moisture", String(moist).c_str(), false);
       mqtt.publish("garden/temperature", String(temp, 1).c_str(), false);
       mqtt.publish("garden/pressure", String(press, 1).c_str(), false);
@@ -744,9 +758,14 @@ void loop() {
       // mqtt.publish("garden/mode", mode == MODE_AUTO ? "AUTO" : "MANUAL", true);
       // mqtt.publish("garden/threshold", String(threshold_pct).c_str(), false);
       mqtt.publish("garden/RSSI", String(level, 1).c_str(), false);
+     
       Serial.println("MQTT published");
-      Serial.print("Temp_Out = ");
-      Serial.println(tempDS);
+
+      Serial.print("DHT h = ");
+      Serial.println(h);
+      Serial.print("DHT t = ");
+      Serial.println(t);
+
     } else {
       Serial.println("Пропуск публикации: нет соединения с MQTT");
     }
